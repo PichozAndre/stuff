@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lightweight Gamepad Tester</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { font-size: 20px; }
+    .pad {
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    .row { margin: 4px 0; }
+    .pressed { color: #4caf50; }
+    .axis {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bar {
+      height: 6px;
+      background: #333;
+      flex: 1;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      background: #4caf50;
+      width: 50%;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Gamepad Tester</h1>
+  <div id="status">Connect a gamepad and press any button...</div>
+  <div id="pads"></div>
+
+  <script>
+    const padsDiv = document.getElementById('pads');
+    const status = document.getElementById('status');
+
+    function createPadUI(index) {
+      const div = document.createElement('div');
+      div.className = 'pad';
+      div.id = 'pad-' + index;
+      div.innerHTML = `
+        <div class="row"><strong>Gamepad ${index}</strong></div>
+        <div class="buttons"></div>
+        <div class="axes"></div>
+      `;
+      padsDiv.appendChild(div);
+      return div;
+    }
+
+    function update() {
+      const gamepads = navigator.getGamepads();
+      padsDiv.innerHTML = '';
+
+      let any = false;
+
+      for (let i = 0; i < gamepads.length; i++) {
+        const gp = gamepads[i];
+        if (!gp) continue;
+        any = true;
+
+        const pad = createPadUI(i);
+
+        const btnDiv = pad.querySelector('.buttons');
+        gp.buttons.forEach((b, idx) => {
+          const span = document.createElement('div');
+          span.className = 'row' + (b.pressed ? ' pressed' : '');
+          span.textContent = `Button ${idx}: ${b.value.toFixed(2)}`;
+          btnDiv.appendChild(span);
+        });
+
+        const axesDiv = pad.querySelector('.axes');
+        gp.axes.forEach((a, idx) => {
+          const row = document.createElement('div');
+          row.className = 'axis';
+
+          const label = document.createElement('span');
+          label.textContent = `Axis ${idx}: ${a.toFixed(2)}`;
+
+          const bar = document.createElement('div');
+          bar.className = 'bar';
+
+          const fill = document.createElement('div');
+          fill.className = 'fill';
+          fill.style.width = ((a + 1) / 2 * 100) + '%';
+
+          bar.appendChild(fill);
+          row.appendChild(label);
+          row.appendChild(bar);
+          axesDiv.appendChild(row);
+        });
+      }
+
+      status.textContent = any
+        ? 'Gamepad detected'
+        : 'Connect a gamepad and press any button...';
+
+      requestAnimationFrame(update);
+    }
+
+    window.addEventListener('gamepadconnected', () => {
+      status.textContent = 'Gamepad connected!';
+    });
+
+    window.addEventListener('gamepaddisconnected', () => {
+      status.textContent = 'Gamepad disconnected';
+    });
+
+    update();
+  </script>
+</body>
+</html>
