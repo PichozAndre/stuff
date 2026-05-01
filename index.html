@@ -94,15 +94,22 @@ function update() {
 
   // === ACTIONS ===
 
-  // DASH (A button / L key) → A = button 0
-  if ((keys["l"] || isJustPressed(0)) && player.dashCooldown <= 0) {
+  // NOTE: Controller mappings differ on browsers / Switchbrew.
+  // On many setups:
+  // B = 0, A = 1, Y = 2, X = 3
+  // (NOT the standard Xbox order!)
+
+  // DASH (A button / L key)
+  // Try button 1 instead of 0 for Switchbrew
+  if ((keys["l"] || isJustPressed(1)) && player.dashCooldown <= 0) {
     player.x += moveX * 60;
     player.y += moveY * 60;
     player.dashCooldown = 30;
   }
 
-  // CLEAR SCREEN (Y button / K key) → Y = button 3
-  if (keys["k"] || isJustPressed(3)) {
+  // CLEAR SCREEN (Y button / K key)
+  // Try button 2 instead of 3 for Switchbrew
+  if (keys["k"] || isJustPressed(2)) {
     enemies = [];
   }
 
