@@ -22,7 +22,7 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-let player = { x: 200, y: 200, size: 20, speed: 3 };
+let player = { x: 200, y: 200, size: 20, speed: 3, dashCooldown: 0 };
 let keys = {};
 let enemies = [];
 
@@ -40,13 +40,23 @@ setInterval(() => {
   });
 }, 800);
 
+function getGamepad() {
+  return navigator.getGamepads()[0];
+}
+
 function getGamepadInput() {
-  const gp = navigator.getGamepads()[0];
+  const gp = getGamepad();
   if (!gp) return { x: 0, y: 0 };
   return {
     x: gp.axes[0],
     y: gp.axes[1]
   };
+}
+
+function isButtonPressed(index) {
+  const gp = getGamepad();
+  if (!gp) return false;
+  return gp.buttons[index]?.pressed;
 }
 
 function update() {
@@ -59,13 +69,34 @@ function update() {
   if (keys["a"]) moveX -= 1;
   if (keys["d"]) moveX += 1;
 
-  // Gamepad
+  // Gamepad movement
   const gp = getGamepadInput();
   moveX += gp.x;
   moveY += gp.y;
 
+  // Normalize diagonal movement (feels nicer)
+  const len = Math.hypot(moveX, moveY);
+  if (len > 0) {
+    moveX /= len;
+    moveY /= len;
+  }
+
+  // DASH (A button / L key)
+  if ((keys["l"] || isButtonPressed(0)) && player.dashCooldown <= 0) {
+    player.x += moveX * 50;
+    player.y += moveY * 50;
+    player.dashCooldown = 30; // frames cooldown
+  }
+
+  // CLEAR SCREEN (Y button / K key)
+  if (keys["k"] || isButtonPressed(3)) {
+    enemies = [];
+  }
+
   player.x += moveX * player.speed;
   player.y += moveY * player.speed;
+
+  if (player.dashCooldown > 0) player.dashCooldown--;
 
   // Clamp inside screen
   player.x = Math.max(0, Math.min(canvas.width, player.x));
@@ -105,6 +136,13 @@ function draw() {
   enemies.forEach(e => {
     ctx.fillRect(e.x, e.y, e.size, e.size);
   });
+
+  // UI
+  ctx.fillStyle = "white";
+  ctx.font = "16px monospace";
+  ctx.fillText("WASD / Stick to move", 10, 20);
+  ctx.fillText("L / A = Dash", 10, 40);
+  ctx.fillText("K / Y = Clear", 10, 60);
 }
 
 function loop() {
