@@ -25,6 +25,7 @@ resize();
 let player = { x: 200, y: 200, size: 20, speed: 3, dashCooldown: 0 };
 let keys = {};
 let enemies = [];
+let prevButtons = [];
 
 // Keyboard input
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
@@ -53,10 +54,20 @@ function getGamepadInput() {
   };
 }
 
-function isButtonPressed(index) {
+function isPressed(index) {
   const gp = getGamepad();
   if (!gp) return false;
   return gp.buttons[index]?.pressed;
+}
+
+// Detect "just pressed" (prevents holding spam)
+function isJustPressed(index) {
+  const gp = getGamepad();
+  if (!gp) return false;
+  const current = gp.buttons[index]?.pressed;
+  const prev = prevButtons[index] || false;
+  prevButtons[index] = current;
+  return current && !prev;
 }
 
 function update() {
@@ -74,31 +85,34 @@ function update() {
   moveX += gp.x;
   moveY += gp.y;
 
-  // Normalize diagonal movement (feels nicer)
+  // Normalize diagonal movement
   const len = Math.hypot(moveX, moveY);
   if (len > 0) {
     moveX /= len;
     moveY /= len;
   }
 
-  // DASH (A button / L key)
-  if ((keys["l"] || isButtonPressed(0)) && player.dashCooldown <= 0) {
-    player.x += moveX * 50;
-    player.y += moveY * 50;
-    player.dashCooldown = 30; // frames cooldown
+  // === ACTIONS ===
+
+  // DASH (A button / L key) → A = button 0
+  if ((keys["l"] || isJustPressed(0)) && player.dashCooldown <= 0) {
+    player.x += moveX * 60;
+    player.y += moveY * 60;
+    player.dashCooldown = 30;
   }
 
-  // CLEAR SCREEN (Y button / K key)
-  if (keys["k"] || isButtonPressed(3)) {
+  // CLEAR SCREEN (Y button / K key) → Y = button 3
+  if (keys["k"] || isJustPressed(3)) {
     enemies = [];
   }
 
+  // Movement
   player.x += moveX * player.speed;
   player.y += moveY * player.speed;
 
   if (player.dashCooldown > 0) player.dashCooldown--;
 
-  // Clamp inside screen
+  // Clamp
   player.x = Math.max(0, Math.min(canvas.width, player.x));
   player.y = Math.max(0, Math.min(canvas.height, player.y));
 
